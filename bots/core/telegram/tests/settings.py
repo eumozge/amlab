@@ -1,0 +1,6 @@
+TEST_BOT_NAME = "TestBot"
+TEST_BOT_TOKEN = "000:xxx-xxx"
+TEST_TELEGRAM_CHAT_ID = 0
+TEST_USERNAME = "magic-username"
+TEST_WELCOME_MESSAGE_SLUG = "magic-welcome-slug"
+TEST_MESSAGE_UNKNOWN_FIELD = 'date'

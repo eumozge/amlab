@@ -1,0 +1,56 @@
+image: amlab-deploy:1.0
+
+stages:
+  - build
+  - tests
+  - staging
+  - production
+
+variables:
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+before_script:
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+  - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
+build:
+  stage: build
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - (docker image ls | grep "$CI_COMMIT_SHA" && echo "Images is already built")
+      ||
+      (docker build -t "$IMAGE_TAG" . && docker push "$IMAGE_TAG")
+
+tests:
+  stage: tests
+  before_script:
+    - ansible-playbook ./.deploy/ansible/setuptests.yml
+    - docker-compose up -d --build
+  script:
+    - docker exec amlab_api_app python manage.py makemigrations --dry-run --check
+    - docker exec amlab_api_app pytest
+  after_script:
+    - docker-compose down
+  only:
+    - master
+  except:
+    - /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+staging:
+  stage: staging
+  script:
+    - ansible-playbook ./.deploy/ansible/staging.yml
+  only:
+    - master
+  except:
+    - /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+production:
+  stage: production
+  script:
+    - ansible-playbook ./.deploy/ansible/production.yml
+      --extra-vars "TAG_MESSAGE='$(git tag -l --format='%(contents)' "$CI_COMMIT_TAG")'"
+  only:
+    - /^v[0-9]+\.[0-9]+\.[0-9]+$/

@@ -1,0 +1,1 @@
+DEFAULT_PARSE_MODE = "Markdown"

@@ -1,0 +1,40 @@
+- name: "login to docker registry"
+  command: docker login -u gitlab-ci-token -p "{{ lookup('env','CI_BUILD_TOKEN') }}" "{{ lookup('env','CI_REGISTRY') }}"
+
+- name: "run docker-compose re-build"
+  shell:
+    chdir: "{{ project_remote_dir }}"
+    cmd: docker-compose up -d --build
+
+- name: "check migrations"
+  command: docker exec "{{ container_django }}" python manage.py makemigrations --dry-run --check
+  when: check_migrations is defined and check_migrations|bool == true
+- name: "apply migrations"
+  command: docker exec "{{ container_django }}" python manage.py migrate
+  register: migrations
+- debug: var=migrations.stdout
+
+- name: "wait 5 seconds"
+  pause: seconds=5
+
+- name: "validate that containers is running"
+  shell: docker inspect -f {% raw %} "{{.State.Running}}" {% endraw %} "{{ item }}"
+  with_items: "{{ containers_are_running }}"
+
+- name: "success notify"
+  slack:
+    token: "{{ lookup('env','SLACK_TOKEN') }}"
+    channel: "{{ slack_channel }}"
+    attachments:
+    - text: "A deploying of *{{ notify_text }}* is completed"
+      color: "good"
+      fields:
+      - title: Project
+        value: "{{ lookup('env','CI_PROJECT_NAME') }}"
+        short: True
+      - title: User
+        value: "{{ lookup('env','GITLAB_USER_EMAIL') }}"
+        short: True
+      - title: Message
+        value: "{{ notify_message }}"
+  when: success_notify is defined and success_notify|bool == true

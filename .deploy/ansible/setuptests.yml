@@ -1,0 +1,12 @@
+---
+- name: "Prepare a setup for tests"
+  hosts: "localhost"
+  connection: local
+  vars:
+    - ci_project_dir  : "{{ lookup('env','CI_PROJECT_DIR') }}"
+    - app_image       : "{{ lookup('env','IMAGE_TAG') }}"
+  roles:
+    - role: docker
+      vars:
+        config: "tests"
+        dest: "{{ ci_project_dir }}"

@@ -1,0 +1,67 @@
+version: '3'
+
+volumes:
+  postgres_volume:
+  redis_volume:
+
+services:
+  postgres:
+    image: postgres:10
+    container_name: {{ container_postgres }}
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+      - /home/restore/backups/:/var/backups/
+    restart: always
+
+  redis:
+    image: redis:5.0.9
+    container_name: {{ container_redis }}
+    volumes:
+      - /var/www/amlab/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_volume:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: always
+
+  django:
+    image: {{ app_image }}
+    container_name: {{ container_django }}
+    env_file:
+      - ./.env
+    ports:
+      - 8000:8000
+    volumes:
+      - /var/www/amlab/sites/static/:/var/www/static/
+      - /var/www/amlab-media/:/var/www/media/
+      - /var/www/amlab/logs/:/var/www/amlab/logs
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+
+  django_rqworker:
+    image: {{ app_image }}
+    container_name: {{ container_django_rqworker }}
+    env_file:
+      - ./.env
+    command: python manage.py rqworker actions sync_challenges
+    restart: always
+    depends_on:
+      - django
+
+  nginx:
+    image: nginx:1.16
+    container_name: {{ container_nginx }}
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/www/amlab/nginx/config/:/etc/nginx/
+      - /var/www/amlab/nginx/log/:/var/log/nginx/
+      - /var/www/amlab/nginx/ssl/:/etc/ssl/
+      - /var/www/amlab/sites/:/sites/
+    restart: always
+    depends_on:
+      - django

@@ -1,0 +1,25 @@
+---
+- name: "Deploy to stating"
+  hosts: "staging"
+  become: yes
+  vars:
+    - app_image : "{{ lookup('env','IMAGE_TAG') }}"
+  roles:
+    - role: docker
+      vars:
+        config: "{{ config_name }}"
+        dest: "{{ project_remote_dir }}"
+    - role: nginx
+      vars:
+        config: "{{ config_name }}"
+        dest: "{{ nginx_remote_dir }}"
+    - role: run
+      vars:
+        containers_are_running: [
+          "{{ container_postgres }}",
+          "{{ container_redis }}",
+          "{{ container_django }}",
+          "{{ container_django_rqworker }}",
+          "{{ container_nginx }}"
+        ]
+        success_notify: false

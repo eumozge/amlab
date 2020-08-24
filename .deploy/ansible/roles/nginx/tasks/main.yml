@@ -1,0 +1,20 @@
+---
+- name: "create nginx directory"
+  file:
+    path: "{{ dest }}"
+    state: directory
+    owner: app
+    group: app
+    mode: 2400
+- name: "generate nginx configs"
+  template:
+    src: "{{ config }}/nginx.conf.j2"
+    dest: "{{ dest }}/nginx.conf"
+    mode: 0400
+- name: "supply nginx configs"
+  copy: src="{{ item }}" dest="{{ dest }}" mode=0400
+  loop:
+     - "gzip.conf"
+     - "mine.types"
+     - "ssl.conf"
+     - "acmechallenge.conf"

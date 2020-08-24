@@ -1,0 +1,13 @@
+---
+ansible_python_interpreter   : /usr/bin/python3
+ansible_ssh_user             : ******
+ansible_ssh_port             : ******
+
+project_remote_dir           : /var/.projects/amlab/
+nginx_remote_dir             : /var/www/amlab/nginx/config/
+
+container_django             : amlab_api_app
+container_django_rqworker    : amlab_api_app_rqworker
+container_nginx              : amlab_api_nginx
+container_postgres           : amlab_api_postgres
+container_redis              : amlab_api_redis

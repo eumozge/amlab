@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:10
+    container_name: {{ container_postgres }}
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=password
+
+  redis:
+    image: redis:5.0.9
+    container_name: {{ container_redis }}
+
+  django:
+    image: {{ app_image }}
+    container_name: {{ container_django }}
+    env_file:
+      - /secret/api/envs/tests
+    depends_on:
+      - postgres
+      - redis

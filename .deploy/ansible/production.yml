@@ -1,0 +1,27 @@
+---
+- name: "Deploy to production"
+  hosts: "production"
+  become: yes
+  vars:
+    - app_image : "{{ lookup('env','IMAGE_TAG') }}"
+  roles:
+    - role: docker
+      vars:
+        config: "{{ config_name }}"
+        dest: "{{ project_remote_dir }}"
+    - role: nginx
+      vars:
+        config: "{{ config_name }}"
+        dest: "{{ nginx_remote_dir }}"
+    - role: run
+      vars:
+        check_migrations: true
+        containers_are_running: [
+          "{{ container_django }}",
+          "{{ container_django_rqworker }}",
+          "{{ container_nginx }}"
+        ]
+        success_notify: true
+        slack_channel: "#dev-release"
+        notify_text: "{{ lookup('env','CI_COMMIT_TAG') }}"
+        notify_message: "{{ TAG_MESSAGE }}"
